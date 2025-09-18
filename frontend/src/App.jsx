@@ -3,8 +3,10 @@ import Header from "./components/Header.jsx";
 import MapView from "./components/MapView.jsx";
 import HospitalCard from "./components/HospitalCard.jsx";
 import SearchBar from "./components/SearchBar.jsx";
+import { SimulationControls } from "./components/SimulationControls.jsx";
 import { getFloodMask } from "./api/flood.js";
 import { getNearestHospital } from "./api/hospital.js";
+import { useSimulation } from "./hooks/useSimulation.js";
 
 export default function App() {
   const [origin, setOrigin] = useState(null);
@@ -15,14 +17,7 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [panTo, setPanTo] = useState(null);
 
-  // Simulation UI state
-  const [simulate, setSimulate] = useState(false);
-  const [simRadiusM, setSimRadiusM] = useState(600);
-  const [simOffsetM, setSimOffsetM] = useState(20);
-  const [tubeM, setTubeM] = useState(75);
-  const [simCenter, setSimCenter] = useState(null);      // [lat, lon]
-  const [placingFlood, setPlacingFlood] = useState(false);
-  const [simPolygon, setSimPolygon] = useState(null);    // backend returned
+  const simulation = useSimulation();
 
   useEffect(() => {
     getFloodMask().then((js) => {
@@ -32,10 +27,10 @@ export default function App() {
   }, []);
 
   const handleMapClick = (latlng) => {
-    if (placingFlood && simulate) {
-      setSimCenter(latlng);              // set flood center anywhere
+    if (simulation.placingFlood && simulation.simulate) {
+      simulation.setSimCenter(latlng);
     } else {
-      setOrigin(latlng);                 // normal click sets origin
+      setOrigin(latlng);
     }
   };
 
@@ -43,17 +38,11 @@ export default function App() {
     if (!origin) return;
     setBusy(true);
     setResult(null);
-    setSimPolygon(null);
+    simulation.resetSimulation();
     try {
-      const js = await getNearestHospital(origin[0], origin[1], radius, {
-        simulate,
-        simRadiusM,
-        simOffsetM,
-        simCenter,   // optional; if absent, backend uses route-based tangent placement
-        tubeM,
-      });
+      const js = await getNearestHospital(origin[0], origin[1], radius, simulation.simulationParams);
       setResult(js);
-      setSimPolygon(js.sim_polygon || null);
+      simulation.setSimPolygon(js.sim_polygon || null);
     } catch (e) {
       alert("Error finding hospital");
     } finally {
@@ -71,69 +60,11 @@ export default function App() {
 
       <div className="row">
         <label>Search radius (km):{" "}
-          <select value={radius} onChange={(e)=>setRadius(parseInt(e.target.value,10))}>
-            {[5,10,15,20,30,40,50].map(r => <option key={r} value={r}>{r}</option>)}
+          <select value={radius} onChange={(e) => setRadius(parseInt(e.target.value, 10))}>
+            {[5, 10, 15, 20, 30, 40, 50].map(r => <option key={r} value={r}>{r}</option>)}
           </select>
         </label>
-
-        {/* Simulation controls */}
-        <label className="pill" style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <input
-            type="checkbox"
-            checked={simulate}
-            onChange={(e) => setSimulate(e.target.checked)}
-          />
-          Simulate flood
-        </label>
-
-        {simulate && (
-          <>
-            <label className="pill" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              Radius (m):
-              <input
-                type="number" min={200} max={3000} step={50}
-                value={simRadiusM}
-                onChange={(e)=>setSimRadiusM(parseInt(e.target.value,10)||600)}
-                style={{ width: 90 }}
-              />
-            </label>
-
-            <label className="pill" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              Offset (m):
-              <input
-                type="number" min={0} max={200} step={10}
-                value={simOffsetM}
-                onChange={(e)=>setSimOffsetM(parseInt(e.target.value,10)||20)}
-                style={{ width: 80 }}
-              />
-            </label>
-
-            <label className="pill" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              Tube (m):
-              <input
-                type="number" min={25} max={200} step={5}
-                value={tubeM}
-                onChange={(e)=>setTubeM(parseInt(e.target.value,10)||75)}
-                style={{ width: 70 }}
-              />
-            </label>
-
-            <button
-              type="button"
-              className="button"
-              onClick={() => setPlacingFlood(v => !v)}
-              style={{ background: placingFlood ? "#7B1FA2" : undefined }}
-            >
-              {placingFlood ? "Click map to set flood center" : "Place flood center on map"}
-            </button>
-
-            {simCenter && (
-              <span className="pill">
-                Flood center: {simCenter[0].toFixed(5)}, {simCenter[1].toFixed(5)}
-              </span>
-            )}
-          </>
-        )}
+        <SimulationControls simulation={simulation} />
       </div>
 
       <MapView
@@ -144,9 +75,9 @@ export default function App() {
         origin={origin}
         hospital={result?.best || null}
         panTo={panTo}
-        simPolygon={simPolygon}                 // backend polygon (geojson)
-        simPreviewCenter={simCenter}            // local preview
-        simPreviewRadiusM={simulate ? simRadiusM : null}
+        simPolygon={simulation.simPolygon}
+        simPreviewCenter={simulation.simCenter}
+        simPreviewRadiusM={simulation.simulate ? simulation.simRadiusM : null}
       />
 
       <div className="row">

@@ -1,39 +1,41 @@
 import requests
 from utils.cache import transtar_cache
 
-# Public docs list several JSONs; if one changes, you can swap here.
-# Placeholder: a common "roadway flood warning sites" JSON endpoint.
-TRANSTAR_URL = "https://traffic.houstontranstar.org/data/floodwarning.json"
+# URL for the TranStar Roadway Flood Warning data feed.
+# The official API documentation points to this sample URL.
+TRANSTAR_URL = "https://traffic.houstontranstar.org/api/roadwayfloodwarning_sample.json"
 
-def roadway_flood_points():
+def get_transtar_points():
     """
-    Returns a list of (lat, lon) points for flood-prone or active warnings.
-    If the endpoint differs, adjust parsing accordingly.
+    Fetches and returns a list of (lat, lon) tuples for active flood sensors
+    from the Houston TranStar API.
+
+    This function caches the results to avoid excessive API calls. It filters
+    for sensors that have a "stream elevation alert" to only return points
+    that are actively reporting flooding.
     """
-    key = "transtar_points"
+    key = "transtar_alert_points"
     if key in transtar_cache:
         return transtar_cache[key]
 
     try:
         r = requests.get(TRANSTAR_URL, timeout=15)
-        js = r.json()
+        r.raise_for_status()  # Raise an exception for bad status codes
+        data = r.json()
+
         points = []
-        # Expecting list of objects with Lat/Lon or similar keys; adjust as needed
-        for item in js:
-            lat = item.get("Latitude") or item.get("lat")
-            lon = item.get("Longitude") or item.get("lon")
-            if lat and lon:
-                points.append((float(lat), float(lon)))
+        # The API returns a dictionary with a 'result' key containing the list of sensors
+        for item in data.get("result", []):
+            # We only want to include points that are actively alerting
+            if item.get("IsStreamElevationAlert") == "True":
+                lat = item.get("Latitude")
+                lon = item.get("Longitude")
+                if lat is not None and lon is not None:
+                    points.append((float(lat), float(lon)))
+
         transtar_cache[key] = points
         return points
-    except Exception:
+    except (requests.RequestException, ValueError) as e:
+        # Log the error for debugging purposes
+        print(f"Error fetching or parsing TranStar data: {e}")
         return []
-
-
-def get_transtar_points():
-    """
-    Placeholder for Houston TranStar water gauge / sensor integration.
-    Should return a list of (lat, lon) tuples for active flood sensors.
-    """
-    return []
-
