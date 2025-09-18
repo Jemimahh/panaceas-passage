@@ -1,6 +1,6 @@
 import requests, math, time
-
-OSRM_BASE = "https://router.project-osrm.org"
+from config import OSRM_API_BASE
+from utils.errors import ServiceError
 
 def _get(url, tries=3, sleep=0.4):
     last = None
@@ -13,13 +13,11 @@ def _get(url, tries=3, sleep=0.4):
         except Exception as e:
             last = str(e)
         time.sleep(sleep * (i + 1))
-    # print for server logs; don’t crash the endpoint
-    print("[OSRM ERROR]", url, "->", last)
-    return None
+    raise ServiceError("OSRM", last)
 
 def distance_km(origin, dest):
     lat1, lon1 = origin; lat2, lon2 = dest
-    url = f"{OSRM_BASE}/route/v1/driving/{lon1},{lat1};{lon2},{lat2}?overview=false&alternatives=false"
+    url = f"{OSRM_API_BASE}/route/v1/driving/{lon1},{lat1};{lon2},{lat2}?overview=false&alternatives=false"
     js = _get(url)
     if not js or not js.get("routes"):
         return math.inf
@@ -34,7 +32,7 @@ def full_route(origin, dest):
         "overview=simplified&geometries=geojson&steps=false",
     ]
     for q in variants:
-        url = f"{OSRM_BASE}/route/v1/driving/{lon1},{lat1};{lon2},{lat2}?{q}"
+        url = f"{OSRM_API_BASE}/route/v1/driving/{lon1},{lat1};{lon2},{lat2}?{q}"
         js = _get(url)
         if js and js.get("routes"):
             r = js["routes"][0]

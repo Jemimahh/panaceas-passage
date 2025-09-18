@@ -1,6 +1,7 @@
-from flask import Flask
+from flask import Flask, jsonify
 from flask_cors import CORS
 from routes.geocode import bp as geocode_bp
+from utils.errors import AppError
 
 def create_app():
     app = Flask(__name__)
@@ -18,6 +19,12 @@ def create_app():
     @app.get("/")
     def root():
         return {"ok": True, "app": "Panacea backend"}
+
+    @app.errorhandler(AppError)
+    def handle_app_error(err):
+        response = jsonify(err.to_dict())
+        response.status_code = err.status_code
+        return response
 
     return app
 

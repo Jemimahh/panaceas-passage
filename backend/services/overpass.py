@@ -1,12 +1,8 @@
 import requests
 from utils.cache import overpass_cache
 import math
-
-ENDPOINTS = [
-    "https://overpass-api.de/api/interpreter",
-    "https://overpass.kumi.systems/api/interpreter",
-    "https://overpass.openstreetmap.fr/api/interpreter",
-]
+from config import OVERPASS_API_ENDPOINTS
+from utils.errors import ServiceError
 
 # helper: compute a square bbox ~ radius_km around (lat, lon)
 def bbox_around(lat: float, lon: float, radius_km: float):
@@ -24,17 +20,17 @@ def _post_overpass(query: str):
         "Accept": "application/json"
     }
     last_err = None
-    for url in ENDPOINTS:
+    for url in OVERPASS_API_ENDPOINTS:
         try:
             r = requests.post(url, data={"data": query}, headers=headers, timeout=30)
+            r.raise_for_status()
             # Overpass sends 200 even for errors sometimes; check text too
-            if r.status_code == 200:
-                return r.json()
-            else:
-                last_err = f"{url} -> HTTP {r.status_code} :: {r.text[:200]}"
-        except Exception as e:
-            last_err = f"{url} -> EXC {e}"
-    raise RuntimeError(last_err or "All Overpass endpoints failed")
+            if "error" in r.text:
+                 raise requests.RequestException(r.text)
+            return r.json()
+        except (requests.RequestException, ValueError) as e:
+            last_err = f"{url} -> {e}"
+    raise ServiceError("Overpass", last_err or "All endpoints failed")
 
 def get_hospitals(lat: float, lon: float, radius_km: int = 20):
     key = (round(lat, 3), round(lon, 3), int(radius_km))
@@ -72,10 +68,9 @@ def get_hospitals(lat: float, lon: float, radius_km: int = 20):
         try:
             data = _post_overpass(bbox_query)
             elements = data.get("elements", [])
-        except Exception as ee:
-            # Return empty list instead of 500; the route layer can handle it
-            # If you want to see the reason, print(ee)
-            elements = []
+        except ServiceError as e:
+            # If both query types fail, re-raise the exception
+            raise e
 
     hospitals = []
     seen = set()

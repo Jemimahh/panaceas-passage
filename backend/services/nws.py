@@ -1,7 +1,7 @@
 import requests
 from utils.cache import alerts_cache
-
-BASE ="https://api.weather.gov/alerts"
+from config import NWS_API_BASE
+from utils.errors import ServiceError
 
 def flood_alert_polygons(bbox=None):
     """
@@ -22,15 +22,17 @@ def flood_alert_polygons(bbox=None):
         params["bbox"] = ",".join(map(str, bbox))
 
     geoms = []
-    for event in ["Flood Warning", "Flash Flood Warning"]:
-        params["event"] = event
-        r = requests.get(BASE, params=params, timeout=20, headers={"Accept": "application/geo+json"})
-        if r.status_code != 200:
-            continue
-        data = r.json()
-        for f in data.get("feature", []):
-            g = f.get("geometry")
-            if g and g.get("type") in ("Polygon","MultiPolygon"):
-                geoms.append(g)
-    alerts_cache[key] = geoms
-    return geoms
+    try:
+        for event in ["Flood Warning", "Flash Flood Warning"]:
+            params["event"] = event
+            r = requests.get(NWS_API_BASE, params=params, timeout=20, headers={"Accept": "application/geo+json"})
+            r.raise_for_status()
+            data = r.json()
+            for f in data.get("features", []):
+                g = f.get("geometry")
+                if g and g.get("type") in ("Polygon", "MultiPolygon"):
+                    geoms.append(g)
+        alerts_cache[key] = geoms
+        return geoms
+    except (requests.RequestException, ValueError) as e:
+        raise ServiceError("NWS", e)

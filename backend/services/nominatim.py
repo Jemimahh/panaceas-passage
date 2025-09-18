@@ -1,8 +1,7 @@
 import requests, time
 from utils.cache import overpass_cache  # reuse cache infra
-from config import DEFAULT_BBOX
-
-NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
+from config import DEFAULT_BBOX, NOMINATIM_API_URL
+from utils.errors import ServiceError
 
 def _inside_bbox(lat: float, lon: float, bbox):
     w, s, e, n = bbox
@@ -31,9 +30,12 @@ def geocode(q: str, limit: int = 5, bbox=DEFAULT_BBOX, hard_bound: bool = True):
         "User-Agent": "panaceas-passage/0.1 (contact: youremail@example.com)"
     }
     time.sleep(0.2)  # be polite
-    r = requests.get(NOMINATIM_URL, params=params, headers=headers, timeout=20)
-    r.raise_for_status()
-    data = r.json()
+    try:
+        r = requests.get(NOMINATIM_API_URL, params=params, headers=headers, timeout=20)
+        r.raise_for_status()
+        data = r.json()
+    except (requests.RequestException, ValueError) as e:
+        raise ServiceError("Nominatim", e)
 
     results = []
     for item in data:

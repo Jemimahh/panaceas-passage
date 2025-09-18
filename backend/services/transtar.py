@@ -1,10 +1,7 @@
 import requests
 from utils.cache import transtar_cache
-
-# URL for the TranStar Roadway Flood Warning data feed.
-# The official API documentation points to this sample URL.
-TRANSTAR_URL = "https://traffic.houstontranstar.org/api/roadwayfloodwarning_sample.json"
-
+from config import TRANSTAR_API_URL
+from utils.errors import ServiceError
 def get_transtar_points():
     """
     Fetches and returns a list of (lat, lon) tuples for active flood sensors
@@ -19,7 +16,7 @@ def get_transtar_points():
         return transtar_cache[key]
 
     try:
-        r = requests.get(TRANSTAR_URL, timeout=15)
+        r = requests.get(TRANSTAR_API_URL, timeout=15)
         r.raise_for_status()  # Raise an exception for bad status codes
         data = r.json()
 
@@ -36,6 +33,4 @@ def get_transtar_points():
         transtar_cache[key] = points
         return points
     except (requests.RequestException, ValueError) as e:
-        # Log the error for debugging purposes
-        print(f"Error fetching or parsing TranStar data: {e}")
-        return []
+        raise ServiceError("TranStar", e)
