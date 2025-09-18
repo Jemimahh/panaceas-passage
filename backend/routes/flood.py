@@ -3,7 +3,7 @@ from shapely.geometry import mapping
 from config import DEFAULT_BBOX, FLOOD_BUFFER_METERS, TRANSTAR_POINT_BUFFER_METERS
 from services.nws import flood_alert_polygons
 from services.fim import fim_polygons
-from services.transtar import roadway_flood_points
+from services.transtar import get_transtar_points
 from utils.geo import union_polygons, buffer_meters, points_buffered
 
 bp = Blueprint("flood", __name__)
@@ -33,7 +33,7 @@ def flood_mask():
     else:
         union_geojson = None
 
-    points = roadway_flood_points()
+    points = get_transtar_points()
     transtar_union = points_buffered(points, TRANSTAR_POINT_BUFFER_METERS) if points else None
     transtar_geojson = mapping(transtar_union) if transtar_union else None
 
