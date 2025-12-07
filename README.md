@@ -36,7 +36,7 @@ frontend/
     hooks/               # useSimulation, etc.
     App.jsx              # Main frontend logic
   vite.config.js         # Vite configuration (proxy to backend)
-
+```
 ## 🚀 Getting Started
 
 ### Prerequisites
