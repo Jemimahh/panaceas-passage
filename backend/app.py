@@ -1,6 +1,7 @@
 from flask import Flask
 from flask_cors import CORS
 from routes.geocode import bp as geocode_bp
+from routes.agent import bp as agent_bp
 
 def create_app():
     app = Flask(__name__)
@@ -14,6 +15,7 @@ def create_app():
     app.register_blueprint(flood_bp, url_prefix="/api")
     app.register_blueprint(hospital_bp, url_prefix="/api")
     app.register_blueprint(geocode_bp, url_prefix="/api")
+    app.register_blueprint(agent_bp, url_prefix="/api")   # NEW
 
     @app.get("/")
     def root():

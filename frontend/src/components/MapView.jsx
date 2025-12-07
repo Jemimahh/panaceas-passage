@@ -6,6 +6,7 @@ import "leaflet/dist/leaflet.css";
 import iconUrl from "leaflet/dist/images/marker-icon.png";
 import iconRetinaUrl from "leaflet/dist/images/marker-icon-2x.png";
 import shadowUrl from "leaflet/dist/images/marker-shadow.png";
+
 const DefaultIcon = L.icon({
   iconUrl,
   iconRetinaUrl,
@@ -50,12 +51,23 @@ export default function MapView({
   simPreviewCenter,     // local preview center [lat, lon]
   simPreviewRadiusM,    // local preview radius in meters
 }) {
-  const mapRef = useRef(null);
-  const layersRef = useRef({});
-
-  // Init map
+  const mapContainerRef = useRef(null); // Reference to the DIV
+  const mapRef = useRef(null);          // Reference to the Leaflet Map instance
+  const layersRef = useRef({});         // Reference to active layers
+  
+  // Keep the latest onClick handler in a ref so we don't need to restart the map when it changes
+  const onClickRef = useRef(onClick);
   useEffect(() => {
-    const map = L.map("map").setView([29.7604, -95.3698], 11);
+    onClickRef.current = onClick;
+  }, [onClick]);
+
+  // Init map (Runs ONLY once)
+  useEffect(() => {
+    // 1. SAFETY CHECK: If map already exists, stop.
+    if (mapRef.current) return;
+
+    // 2. Initialize on the specific DOM element (not by ID)
+    const map = L.map(mapContainerRef.current).setView([29.7604, -95.3698], 11);
 
     // Carto Positron tiles (Google-like)
     L.tileLayer(
@@ -67,10 +79,21 @@ export default function MapView({
       }
     ).addTo(map);
 
-    map.on("click", (e) => onClick && onClick([e.latlng.lat, e.latlng.lng]));
+    // Attach click listener using the Ref (stable)
+    map.on("click", (e) => {
+      if (onClickRef.current) {
+        onClickRef.current([e.latlng.lat, e.latlng.lng]);
+      }
+    });
+
     mapRef.current = map;
-    return () => map.remove();
-  }, [onClick]);
+
+    // 3. CLEANUP: Properly destroy map on unmount
+    return () => {
+      map.remove();
+      mapRef.current = null;
+    };
+  }, []); // Empty dependency array = stable map
 
   // Update layers
   useEffect(() => {
@@ -193,5 +216,16 @@ export default function MapView({
     mapRef.current.setView([lat, lon], 14, { animate: true });
   }, [panTo]);
 
-  return <div id="map" />;
+  // USE THE REF HERE, not ID
+ // ... rest of the code ...
+
+  // FIX: Use a fixed height (e.g., 600px) instead of 100%
+  // or ensure your CSS defines a height for the map container.
+  return (
+    <div 
+      id="map" 
+      ref={mapContainerRef} 
+      style={{ width: "100%", height: "600px", position: "relative" }} 
+    />
+  );
 }

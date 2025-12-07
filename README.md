@@ -1,81 +1,111 @@
 # Panacea’s Passage
 
-Flood-aware hospital routing for Houston, TX. This project combines a Flask backend with a React/Leaflet frontend to help users find the safest hospital routes, avoiding flooded zones and risky roads.
+**Flood-aware hospital routing & risk analysis for Houston, TX.**
 
-## Features
+Panacea's Passage is a full-stack application designed to help users navigate safely during flood events. It combines real-time data integration with AI-powered analysis to route users to the nearest safe hospital while avoiding known flood zones, risky roads, and active weather alerts.
 
-- Search for the nearest hospital, avoiding flood zones and flood-prone roads.
-- Interactive map with flood polygons, TranStar sensor points, and route visualization.
-- Address search and map click to set origin.
-- Simulate flood scenarios for risk analysis.
-- Data sources: OpenStreetMap (hospitals), NWS alerts, TranStar sensors, OSRM routing.
-## Planned Features
+## 🎥 Demo Video
 
-- Integration of Houston TranStar road flood sensor gages for real-time flood detection and routing.
-## Project Structure
+**[Watch the Panacea Flood Agent Demo (Google Drive)](https://drive.google.com/drive/folders/1jAY5zL6YBnoxCPrZhJT0vBoWx2n5X1o0)**
 
-```
+## ✨ Features
+
+- **Safe Routing:** Finds the nearest hospital while actively routing around flood polygons and flood-prone roads.
+- **AI Flood Risk Agent:** Uses Google Gemini AI to analyze local weather data (NWS) and generate a plain-English risk assessment for any specific location.
+- **Interactive Map:** Visualizes flood polygons, TranStar sensor points, hospital locations, and safe routes on a Leaflet map.
+- **Reverse Geocoding:** Automatically identifies street names and neighborhoods when you click the map.
+- **Simulation Mode:** Allows users to simulate flood scenarios ("High Risk Mode") to test routing and AI responses safely.
+
+## 🛠️ Project Structure
 backend/
-  app.py                # Flask app entrypoint
-  config.py             # Config/constants
-  requirements.txt      # Python dependencies
-  routes/               # API endpoints (hospital, flood, geocode, health)
-  services/             # Data integrations (OSM, OSRM, NWS, TranStar, FIM)
-  utils/                # Geo and cache utilities
+  app.py                 # Flask application entry
+  services/
+    agent.py             # AI Flood Agent (Gemini + fallback logic)
+  config.py              # Configuration & environment variable loading
+  hospital.py            # Nearest-hospital lookup (Overpass API)
+  flood.py               # Flood polygon / TranStar processing
+  routes/                # API endpoints
+  utils/                 # Geospatial helpers & caching
+  requirements.txt       # Python dependencies
 
 frontend/
-  index.html            # Main HTML
-  package.json          # Node dependencies/scripts
-  vite.config.js        # Vite config
-  src/                  # React app (App.jsx, components, api, styles)
-```
+  src/
+    components/          # React components (MapView, HospitalCard, RiskCard...)
+    api/                 # API wrappers for geocode, hospital, risk, flood data
+    hooks/               # useSimulation, etc.
+    App.jsx              # Main frontend logic
+  vite.config.js         # Vite configuration (proxy to backend)
 
-## Getting Started
 
-### Backend
+## 🚀 Getting Started
 
-1. Install Python dependencies:
+### Prerequisites
+- Python 3.8+
+- Node.js & npm
+- A Google Gemini API Key (for the AI Flood Agent)
+
+### 1. Backend Setup
+
+1.  Navigate to the backend folder:
     ```bash
     cd backend
+    ```
+
+2.  Install Python dependencies:
+    ```bash
     pip install -r requirements.txt
     ```
-2. Run the Flask server:
-    ```bash
-    python app.py
+
+3.  **Configure Environment Variables:**
+    Create a `.env` file in the `backend/` directory to store your API key securely.
+    ```env
+    # backend/.env
+    GEMINI_API_KEY=your_actual_api_key_here
     ```
-   The backend runs on `http://localhost:5001`.
 
-### Frontend
+4.  Run the Flask server:
+    ```bash
+    python app.py or flask run
+    ```
+    The backend will start on `http://localhost:5000` (or `5001`).
 
-1. Install Node dependencies:
+### 2. Frontend Setup
+
+1.  Navigate to the frontend folder:
     ```bash
     cd frontend
+    ```
+
+2.  Install Node dependencies:
+    ```bash
     npm install
     ```
-2. Start the development server:
+
+3.  Start the development server:
     ```bash
     npm run dev
     ```
-   The frontend runs on `http://localhost:5173` and proxies API requests to the backend.
+    The app will open at `http://localhost:5173`.
 
-## Usage
+## 📖 Usage
 
-- Open the frontend in your browser.
-- Click on the map or search for an address to set your location.
-- Adjust search radius and simulation options as needed.
-- Click "Find nearest safe hospital" to view the safest route.
+1.  **Set Your Location:** Click anywhere on the map or use the search bar to enter an address.
+2.  **View Risk Analysis:** The "Flood Risk" card will instantly load, showing the current risk level, confidence score, and an AI-generated explanation based on NWS forecast data.
+3.  **Find a Hospital:** Click "Find nearest safe hospital." The app will calculate a route that avoids known flood zones.
+4.  **Simulation Mode:** Use the toggle controls to enable "Simulate High Flood Risk" to see how the system behaves under pressure.
 
-## Data Sources
+## 📡 Data Sources
 
-- **Hospitals:** OpenStreetMap via Overpass API
-- **Flood Alerts:** NWS API
-- **Road Flood Sensors:** Houston TranStar
-- **Routing:** OSRM public server
+-   **Routing Engine:** OSRM (Open Source Routing Machine)
+-   **Hospitals:** OpenStreetMap (via Overpass API)
+-   **Flood Alerts & Weather:** National Weather Service (NWS) API
+-   **AI Analysis:** Google Gemini 1.5 Flash / 2.0 Flash
+-   **Geocoding:** Nominatim (OpenStreetMap)
 
-## License
+## 📄 License
 
-MIT License
+MIT License. See `LICENSE` for details.
 
 ---
 
-For questions or contributions, open an issue or submit a pull request on GitHub.
+**Note:** This is a student project and a simulation tool. It should not be used as the primary source of information during life-threatening emergency situations. Always follow official local guidance.

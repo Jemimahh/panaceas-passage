@@ -28,7 +28,7 @@ def geocode(q: str, limit: int = 5, bbox=DEFAULT_BBOX, hard_bound: bool = True):
         "bounded": 1 if hard_bound else 0,
     }
     headers = {
-        "User-Agent": "panaceas-passage/0.1 (contact: youremail@example.com)"
+        "User-Agent": "panaceas-passage/0.1 (contact: jemima_student_project@gmail.com)"
     }
     time.sleep(0.2)  # be polite
     r = requests.get(NOMINATIM_URL, params=params, headers=headers, timeout=20)
