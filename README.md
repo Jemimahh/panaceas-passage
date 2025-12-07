@@ -17,6 +17,7 @@ Panacea's Passage is a full-stack application designed to help users navigate sa
 - **Simulation Mode:** Allows users to simulate flood scenarios ("High Risk Mode") to test routing and AI responses safely.
 
 ## 🛠️ Project Structure
+```txt
 backend/
   app.py                 # Flask application entry
   services/
@@ -35,7 +36,6 @@ frontend/
     hooks/               # useSimulation, etc.
     App.jsx              # Main frontend logic
   vite.config.js         # Vite configuration (proxy to backend)
-
 
 ## 🚀 Getting Started
 
@@ -99,7 +99,7 @@ frontend/
 -   **Routing Engine:** OSRM (Open Source Routing Machine)
 -   **Hospitals:** OpenStreetMap (via Overpass API)
 -   **Flood Alerts & Weather:** National Weather Service (NWS) API
--   **AI Analysis:** Google Gemini 1.5 Flash / 2.0 Flash
+-   **AI Analysis:** Google Gemini gemini-2.5-flash
 -   **Geocoding:** Nominatim (OpenStreetMap)
 
 ## 📄 License
